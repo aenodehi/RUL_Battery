@@ -30,7 +30,7 @@ This container setup is perfect for experimenting with real-world battery datase
 sudo apt-get install podman podman-docker podman-compose
 podman-compose build
 podman-compose up -d
-
+```
 
 ## 🚀Quick Start
 
