@@ -1,7 +1,7 @@
 # RUL Forecasting for Batteries - Python Dev Container
 
-[![Podman](https://img.shields.io/badge/Podman-4.9.3-892CA0?logo=podman)](https://podman.io/)  
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](https://www.python.org/)  
+[![Podman](https://img.shields.io/badge/Podman-4.9.3-892CA0?logo=podman)](https://podman.io/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](https://www.python.org/) 
 [![Code-Server](https://img.shields.io/badge/Code--Server-4.16.1-007ACC?logo=visual-studio-code)](https://github.com/coder/code-server)
 
 A containerized Python environment for battery Remaining Useful Life (RUL) prediction using machine learning models — accessible right from your browser using Code-Server.
