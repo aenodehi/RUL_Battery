@@ -3,8 +3,10 @@ notebook
 numpy
 scikit-learn
 matplotlib
+tk
 python-box
 pyYAML
 tqdm
 ensure
 joblib
+pyarrow
