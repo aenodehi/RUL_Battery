@@ -41,7 +41,7 @@ The following metrics are used for model evaluation:
 
 ## 📁 Directory Structure
 ```
-.
+project-root/
 ├── data/
 │ ├── B0005_train.parquet
 │ ├── B0005_val.parquet
