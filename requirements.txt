@@ -3,6 +3,7 @@ notebook
 numpy
 scikit-learn
 matplotlib
+plotly
 tk
 python-box
 pyYAML
@@ -10,3 +11,6 @@ tqdm
 ensure
 joblib
 pyarrow
+utilsforecast
+statsforecast
+datasetsforecast
