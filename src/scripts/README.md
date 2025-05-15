@@ -40,7 +40,7 @@ The following metrics are used for model evaluation:
 ---
 
 ## 📁 Directory Structure
-
+.
 ├── data/
 │ ├── B0005_train.parquet
 │ ├── B0005_val.parquet
@@ -48,9 +48,8 @@ The following metrics are used for model evaluation:
 ├── src/
 │ ├── models/
 │ ├── scripts/
-| | └── README.md 
+│ │ └── README.md ← (you are here)
 │ └── utils/
 ├── requirements.txt
 └── README.md
-
 
