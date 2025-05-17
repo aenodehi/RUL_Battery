@@ -22,7 +22,7 @@ def mase(y_true, y_pred, y_train, m=48):
 # Main evaluation function
 def evaluate_performance(
     ts_train: pd.DataFrame,
-    ts_test: pd.DataFrame,
+    ts_target: pd.DataFrame,
     models: list,
     freq: str,
     level: list,
@@ -32,7 +32,7 @@ def evaluate_performance(
     h: int,
     metric_df: pd.DataFrame = None,
     return_y_pred: bool = False
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame] | tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Evaluate forecasting performance using StatsForecast and array-based metrics.
 
@@ -44,7 +44,7 @@ def evaluate_performance(
         metric_df = pd.DataFrame()
 
     # Forecast and timings
-    results = ts_test.copy()
+    results = ts_target.copy()
     timing = {}
 
     # Define metrics list as (name, function)

@@ -44,7 +44,8 @@ metrics = [mase, mae, mse, rmse, smape, forecast_bias]
 
 results, metrics_df, y_pred = evaluate_performance(
     ts_train=ts_train,
-    ts_test=ts_val,
+    ts_target=ts_val,
+    #ts_target=ts_test,
     models=[Naive()],
     freq=freq,
     level=[],
