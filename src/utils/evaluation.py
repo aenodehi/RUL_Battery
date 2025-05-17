@@ -30,7 +30,8 @@ def evaluate_performance(
     time_col: str,
     target_col: str,
     h: int,
-    metric_df: pd.DataFrame = None
+    metric_df: pd.DataFrame = None,
+    return_y_pred: bool = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Evaluate forecasting performance using StatsForecast and array-based metrics.
@@ -106,5 +107,7 @@ def evaluate_performance(
 
             metric_df = pd.concat([metric_df, pd.DataFrame(evaluation, index=[0])], ignore_index=True)
 
+    if return_y_pred:
+        return results, metric_df, y_pred
     return results, metric_df
 

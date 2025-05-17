@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 from pathlib import Path
 import time
+import os
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 sys.path.append(str(Path(__file__).resolve().parents[2]))
@@ -9,61 +10,88 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.utils.evaluation import evaluate_performance
 from src.models.statsforecast_models import Naive
 from utilsforecast.losses import mase, mae, mse, rmse, smape
-#from statsforecast.losses import mase, mae, mse, rmse, smape
 from src.models import statsforecast_models
 from src.utils.ts_utils import forecast_bias
+from src.utils.plotting_utils import plot_forecast, format_plot
 
+# === Paths ===
 preprocessed = Path("./data")
+output_dir = Path("imgs")
+output_dir.mkdir(exist_ok=True)
 
-#df = pd.read_csv("./data/B0005_discharge_adjusted.csv", index_col = "datetime_", parse_dates = True)
-#print(df.head())
-
+# === Load Data ===
 train_df = pd.read_parquet(preprocessed / "B0005_train.parquet")
 val_df = pd.read_parquet(preprocessed / "B0005_val.parquet")
 test_df = pd.read_parquet(preprocessed / "B0005_test.parquet")
 
-ts_train = train_df[["Voltage_measured"]]
-ts_val = val_df[["Voltage_measured"]]
-ts_test = test_df[["Voltage_measured"]]
-
-ts_train = ts_train.reset_index()
-ts_val = ts_val.reset_index()
-ts_test = ts_test.reset_index()
-
-ts_train['datetime_'] = pd.to_datetime(ts_train['datetime_'])
-ts_val['datetime_'] = pd.to_datetime(ts_val['datetime_'])
-ts_test['datetime_'] = pd.to_datetime(ts_test['datetime_'])
+ts_train = train_df[["Voltage_measured"]].reset_index()
+ts_val = val_df[["Voltage_measured"]].reset_index()
+ts_test = test_df[["Voltage_measured"]].reset_index()
 
 for df in [ts_train, ts_val, ts_test]:
+    df['datetime_'] = pd.to_datetime(df['datetime_'])
     df['unique_id'] = 'B0005'
 
-print("Columns in ts_train after resetting index:", ts_train.columns)
+#print("Columns in ts_train after resetting index:", ts_train.columns)
+#print(ts_train.head())
+#print(ts_train.tail())
 
-#print(f"Column names in the dataset: {df.columns.tolist()}")
-#print(df.head())
-print(ts_train.head())
-
-# Baseline Forecasts
-pred_df = pd.concat([ts_train, ts_val])
-
-# NAIVE FORECAST
-freq = "1min"
+# === Forecast ===
+freq = "15s"
 metrics_df = pd.DataFrame()
 
 metrics = [mase, mae, mse, rmse, smape, forecast_bias]
 
-results, metrics_df = evaluate_performance(
-    ts_train=ts_train, 
-    ts_test=ts_val, 
+results, metrics_df, y_pred = evaluate_performance(
+    ts_train=ts_train,
+    ts_test=ts_val,
     models=[Naive()],
     freq=freq,
-    level=[],  # Ensure this is correct or adjust as necessary
+    level=[],
     id_col='unique_id',
-    time_col= 'datetime_',
+    time_col='datetime_',
     target_col='Voltage_measured',
     h=len(ts_val),
-    metric_df=metrics_df  # Pass None or an existing DataFrame if you want to append results
+    metric_df=metrics_df,
+    return_y_pred=True
 )
 
-
 print(metrics_df)
+
+# === Plot ===
+model_name = ['Naive']
+model_display_name = ['Naive']
+
+fig = plot_forecast(
+    results,
+    forecast_columns=model_name,
+    forecast_display_names=model_display_name,
+    timestamp_col='datetime_',
+    target_col='Voltage_measured'
+)
+
+fig = format_plot(
+    fig,
+    title=f"{model_name[0]}: "
+          f"MAE: {metrics_df.loc[metrics_df.Model == model_name[0], 'MAE'].iloc[0]:.4f} | "
+          f"MASE: {metrics_df.loc[metrics_df.Model == model_name[0], 'MASE'].iloc[0]:.4f} | "
+          f"BIAS: {metrics_df.loc[metrics_df.Model == model_name[0], 'Bias'].iloc[0]:.4f}"
+)
+
+fig.update_xaxes(
+    type="date",
+    range=[
+        pd.to_datetime(results['datetime_'].min()),
+        pd.to_datetime(results['datetime_'].max())
+    ]
+)
+
+fig.write_image(str(output_dir / "naive.png"))
+fig.write_html(str(output_dir / "naive_forecast.html"))
+
+print("✅ Forecast plots saved:")
+print(f" - Static PNG: {output_dir / 'naive.png'}")
+print(f" - Interactive HTML: {output_dir / 'naive_forecast.html'}")
+
+fig.show()
+
