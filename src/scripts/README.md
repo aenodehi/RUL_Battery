@@ -31,6 +31,8 @@ The following metrics are used for model evaluation:
 | SeasonalNaive | 0.32101 | 0.13971 | 0.37378 | 9.40310 | 1.45656 | 0.35230 | 0.199            |      |
 |WindowAverage  | 0.18831 | 0.05874 | 0.24236 | 5.52418 | 0.85446 | 0.97464 | 0.194            |      |
 | HoltWinters   | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 9.107            |      |
+| AutoETS       | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 8.930            |      |
+
 
 ✅ Forecast plots saved:
 - Static PNG: `imgs/.png`
