@@ -37,6 +37,8 @@ The following metrics are used for model evaluation:
 | TBATS         | 0.40598 | 0.21904 | 0.46801 | 12.35833| 1.84209 | 9.87590 | 13.419           |      |
 | MSTL          | 0.20345 | 0.06649 | 0.25786 | 5.97373 | 0.92312 | 2.65154 | 2.807            |      |
 
+Based on this sample test, the best performing models are (HoltWinters, and **ETS**), **ARIMA**, and **TBATS**. Lets build that for all models using **AutoETS** and **TBATS**. ARIMA gives similar performance to TBATS, but TBATS is faster.
+
 
 ✅ Forecast plots saved:
 - Static PNG: `imgs/.png`
