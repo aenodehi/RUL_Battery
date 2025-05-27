@@ -32,6 +32,7 @@ The following metrics are used for model evaluation:
 |WindowAverage  | 0.18831 | 0.05874 | 0.24236 | 5.52418 | 0.85446 | 0.97464 | 0.194            |      |
 | HoltWinters   | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 9.107            |      |
 | AutoETS       | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 8.930            |      |
+| ARIMA         | 0.22765 | 0.07834 | 0.27990 | 6.70182 | 1.03296 | 3.70380 | 113.202          |      |
 
 
 ✅ Forecast plots saved:
@@ -41,8 +42,8 @@ The following metrics are used for model evaluation:
 ---
 
 ## 🚧 To Be Added
-- [ ] **ARIMA**
-- [ ] **Exponential Smoothing (ETS)**
+- [x] **ARIMA**
+- [x] **Exponential Smoothing (ETS)** (AutoETS, HoltWinters)
 - [ ] **Prophet**
 - [ ] **LSTM**
 - [ ] **XGBoost Regressor**
