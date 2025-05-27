@@ -24,9 +24,6 @@ The following metrics are used for model evaluation:
 
 ## 📉 Model Performance
 
-| Model | MAE     | MSE     | RMSE    | SMAPE   | MASE   | Bias    | Time Elapsed (s) |
-|-------|---------|---------|---------|---------|--------|---------|------------------|
-| Naive | 0.20178 | 0.06332 | 0.25164 | 5.90646 | 0.91556 | 2.78616 | 0.209            |
 
 | Model         | MAE     | MSE     | RMSE    | SMAPE   | MASE    | Bias    | Time Elapsed (s) |      |
 |---------------|---------|---------|---------|---------|---------|---------|------------------|------|
