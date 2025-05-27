@@ -6,7 +6,7 @@ This document summarizes the performance of different time series models used fo
 
 ## 📊 Dataset
 - **Dataset**: B0005 (Voltage measurements)
-- **Frequency**: 1 minute
+- **Frequency**: 15 seconds
 - **Train/Validation/Test Split**: Preprocessed and stored as Parquet files.
 
 ---
@@ -22,11 +22,20 @@ The following metrics are used for model evaluation:
 
 ---
 
-## 📉 Baseline Model: Naive Forecast
+## 📉 Model Performance
 
 | Model | MAE     | MSE     | RMSE    | SMAPE   | MASE   | Bias    | Time Elapsed (s) |
 |-------|---------|---------|---------|---------|--------|---------|------------------|
 | Naive | 0.20178 | 0.06332 | 0.25164 | 5.90646 | 0.91556 | 2.78616 | 0.209            |
+
+| Model         | MAE     | MSE     | RMSE    | SMAPE   | MASE    | Bias    | Time Elapsed (s) |      |
+|---------------|---------|---------|---------|---------|---------|---------|------------------|------|
+| Naive         | 0.20178 | 0.06332 | 0.25164 | 5.90646 | 0.91556 | 2.78616 | 0.209            |      |
+| SeasonalNaive | 0.32101 | 0.13971 | 0.37378 | 9.40310 | 1.45656 | 0.35230 | 0.199            |      |
+
+✅ Forecast plots saved:
+- Static PNG: `imgs/.png`
+- Interactive HTML: `imgs/.html`
 
 ---
 
