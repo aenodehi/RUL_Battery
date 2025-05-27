@@ -29,6 +29,8 @@ The following metrics are used for model evaluation:
 |---------------|---------|---------|---------|---------|---------|---------|------------------|------|
 | Naive         | 0.20178 | 0.06332 | 0.25164 | 5.90646 | 0.91556 | 2.78616 | 0.209            |      |
 | SeasonalNaive | 0.32101 | 0.13971 | 0.37378 | 9.40310 | 1.45656 | 0.35230 | 0.199            |      |
+|WindowAverage  | 0.18831 | 0.05874 | 0.24236 | 5.52418 | 0.85446 | 0.97464 | 0.194            |      |
+
 
 ✅ Forecast plots saved:
 - Static PNG: `imgs/.png`
@@ -47,16 +49,45 @@ The following metrics are used for model evaluation:
 
 ## 📁 Directory Structure
 ```
+
+
 project-root/
-├── data/
-│ ├── B0005_train.parquet
-│ ├── B0005_val.parquet
-│ └── B0005_test.parquet
-├── src/
-│ ├── models/
-│ ├── scripts/
-│ │ └── README.md ← (you are here)
-│ └── utils/
+├── README.md
+├── compose.yml
+├── Dockerfile
 ├── requirements.txt
-└── README.md
+├── data/
+│   ├── B0005_discharge.csv
+│   ├── B0005_discharge_adjusted.csv
+│   ├── B0005_test.parquet
+│   ├── B0005_train.parquet
+│   ├── B0005_val.parquet
+│   └── combined_discharge.csv
+├── imgs/
+│   ├── naive_forecast.html
+│   └── seasonalnaive_forecast.html
+├── Research/
+│   ├── test.ipynb
+│   ├── test_g.ipynb
+│   ├── test_s.ipynb
+│   ├── CAPSTONE PROJECT - TFT for multiple series/
+│   ├── N-BEATS/
+│   └── TFT/
+└── src/
+    ├── __init__.py
+    ├── __pycache__/
+    ├── config/
+    ├── decomposition/
+    ├── models/
+    ├── scripts/
+    │   ├── README.md ← (you are here)
+    │   ├── ch04.py
+    │   ├── ch0402.py
+    │   ├── ch0402_Naive.py
+    │   ├── ch0402_SeasonalNaive.py
+    │   ├── ch04_1.py
+    │   ├── p02.py
+    │   └── p03.py
+    └── utils/
+
 ```

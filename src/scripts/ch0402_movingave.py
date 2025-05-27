@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.utils.evaluation import evaluate_performance
-from src.models.statsforecast_models import Naive, SeasonalNaive
+from src.models.statsforecast_models import Naive, WindowAverage
 from utilsforecast.losses import mase, mae, mse, rmse, smape
 from src.models import statsforecast_models
 from src.utils.ts_utils import forecast_bias
@@ -42,27 +42,25 @@ metrics_df = pd.DataFrame()
 
 metrics = [mase, mae, mse, rmse, smape, forecast_bias]
 
-results, metrics_df = (
-    evaluate_performance(
-        ts_train=ts_train, 
-        ts_target=ts_val, 
-        models = [SeasonalNaive(season_length=48*7)], 
-        ## metrics = [mase, mae, mse, rmse, smape,forecast_bias], 
-        freq = freq,
-        level = [] ,
-        id_col = 'unique_id',
-        time_col = 'datetime_',
-        target_col = 'Voltage_measured',
-        h = len(ts_val),
-        metric_df=metrics_df
-        )
+results, metrics_df = evaluate_performance(
+    ts_train=ts_train,
+    ts_target=ts_val,
+    #ts_target=ts_test,
+    models=[WindowAverage(window_size = 48)],
+    freq=freq,
+    level=[],
+    id_col='unique_id',
+    time_col='datetime_',
+    target_col='Voltage_measured',
+    h=len(ts_val),
+    metric_df=metrics_df
 )
 
 print(metrics_df)
 
 # === Plot ===
-model_name = ['SeasonalNaive']
-model_display_name = ['SeasonalNaive']
+model_name = ['WindowAverage']
+model_display_name = ['WindowAverage']
 
 fig = plot_forecast(
     results,
@@ -88,12 +86,12 @@ fig.update_xaxes(
     ]
 )
 
-fig.write_image(str(output_dir / "seasonalnaive.png"))
-fig.write_html(str(output_dir / "seasonalnaive_forecast.html"))
+fig.write_image(str(output_dir / "window_average.png"))
+fig.write_html(str(output_dir / "window_average_forecast.html"))
 
 print("✅ Forecast plots saved:")
-print(f" - Static PNG: {output_dir / 'seasonalnaive.png'}")
-print(f" - Interactive HTML: {output_dir / 'seasonalnaive_forecast.html'}")
+print(f" - Static PNG: {output_dir / 'window_average.png'}")
+print(f" - Interactive HTML: {output_dir / 'window_average_forecast.html'}")
 
 fig.show()
 
