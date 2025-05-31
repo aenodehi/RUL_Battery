@@ -29,7 +29,7 @@ The following metrics are used for model evaluation:
 |---------------|---------|---------|---------|---------|---------|---------|------------------|------|
 | Naive         | 0.20178 | 0.06332 | 0.25164 | 5.90646 | 0.91556 | 2.78616 | 0.209            |      |
 | SeasonalNaive | 0.32101 | 0.13971 | 0.37378 | 9.40310 | 1.45656 | 0.35230 | 0.199            |      |
-|WindowAverage  | 0.18831 | 0.05874 | 0.24236 | 5.52418 | 0.85446 | 0.97464 | 0.194            |      |
+| WindowAverage | 0.18831 | 0.05874 | 0.24236 | 5.52418 | 0.85446 | 0.97464 | 0.194            |      |
 | HoltWinters   | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 9.107            |      |
 | AutoETS       | 0.18617 | 0.05830 | 0.24146 | 5.46085 | 0.84473 | 0.15466 | 8.930            |      |
 | ARIMA         | 0.22765 | 0.07834 | 0.27990 | 6.70182 | 1.03296 | 3.70380 | 113.202          |      |
@@ -43,6 +43,10 @@ Based on this sample test, the best performing models are (HoltWinters, and **ET
 ✅ Forecast plots saved:
 - Static PNG: `imgs/.png`
 - Interactive HTML: `imgs/.html`
+
+Naïve forecast
+Here, we can see that the forecast is a straight line and completely ignores any pattern in the series. This is by far the simplest way to forecast, hence why it is naïve.
+
 
 ---
 
