@@ -47,6 +47,7 @@ Based on this sample test, the best performing models are (HoltWinters, and **ET
 Naïve forecast
 Here, we can see that the forecast is a straight line and completely ignores any pattern in the series. This is by far the simplest way to forecast, hence why it is naïve.
 
+Using NIXTLA library to generate a baseline forecast.
 
 ---
 
