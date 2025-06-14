@@ -1,4 +1,5 @@
 pandas 
+torch
 notebook
 numpy
 scikit-learn
@@ -15,4 +16,7 @@ utilsforecast
 statsforecast
 datasetsforecast
 kaleido
-
+humanize
+pytorch_lightning
+mlforecast
+window_ops
