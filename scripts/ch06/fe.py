@@ -78,11 +78,6 @@ lags = (
         #(np.arange(5) + 40320).tolist()
         )
 
-with LogTime():
-    full_df,added_features = add_lags(
-            full_df, lags=lags, column="y", ts_id="unique_id", use_32_bit=True
-            )
-print(f"Features Created: {','.join(added_features)}")
 
 # === Rolling ===
 lag_transforms[1] += [RollingMean(window_size=n) for n in [3, 6, 12, 48]] + [
@@ -101,6 +96,9 @@ lag_transforms[40320] += [
 
 # === EWMA ===
 lag_transforms[1] += [ExponentiallyWeightedMean(alpha=alpha) for alpha in [0.2, 0.5, 0.9]]
+
+
+# === Temporal Features ===
 
 temporal_features = [
     "month",
