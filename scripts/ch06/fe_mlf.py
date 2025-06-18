@@ -78,11 +78,11 @@ lags = (
         #(np.arange(5) + 40320).tolist()
         )
 
-with LogTime():
-    full_df,added_features = add_lags(
-            full_df, lags=lags, column="y", ts_id="unique_id", use_32_bit=True
-            )
-print(f"Features Created: {','.join(added_features)}")
+# with LogTime():
+#     full_df,added_features = add_lags(
+#             full_df, lags=lags, column="y", ts_id="unique_id", use_32_bit=True
+#             )
+# print(f"Features Created: {','.join(added_features)}")
 
 # === Rolling ===
 lag_transforms[1] += [RollingMean(window_size=n) for n in [3, 6, 12, 48]] + [
