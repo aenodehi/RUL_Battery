@@ -69,8 +69,6 @@ full_df_type_map = full_df
 full_df = full_df.drop(columns=['type'])
 
 # === Lag Features ===
-lag_transforms = defaultdict(list)
-
 lags = (
         (np.arange(5) + 1).tolist() +
         (np.arange(5) + 240).tolist() +
@@ -78,68 +76,67 @@ lags = (
         #(np.arange(5) + 40320).tolist()
         )
 
+with LogTime():
+    full_df, added_features = add_lags(
+            full_df, lags=lads, column="y", ts_id="unique_id", use_32_bit=True
+            )
+print(f"Features Created: {','.join(added_features)}")
 
 # === Rolling ===
-lag_transforms[1] += [RollingMean(window_size=n) for n in [3, 6, 12, 48]] + [
-        RollingStd(window_size=n) for n in [3, 6, 12, 48]
-]
+with LogTime():
+    full_df, added_features = add_rolling_features(
+        full_df,
+        rolls=[3, 6, 12, 48],
+        column="y",
+        agg_funcs=["mean", "std"],
+        ts_id="unique_id",
+        use_32_bit=True,
+    )
+print(f"Features Created: {','.join(added_features)}")
 
 # === Seasonal Rolling ===
-lag_transforms[5760] += [
-        SeasonalRollingMean(season_length=5760, window_size=3),
-        SeasonalRollingStd(season_length=5760, window_size=3)
-        ]
-lag_transforms[40320] += [
-        SeasonalRollingMean(season_length=40320, window_size=3),
-        SeasonalRollingStd(season_length=40320, window_size=3)
-        ]
+
+with LogTime():
+    full_df, added_features = add_seasonal_rolling_features(
+        full_df,
+        rolls=[3],
+        seasonal_periods=[5760, 40320],
+        column="y",
+        agg_funcs=["mean", "std"],
+        ts_id="unique_id",
+        use_32_bit=True,
+    )
+print(f"Features Created: {','.join(added_features)}")
 
 # === EWMA ===
-lag_transforms[1] += [ExponentiallyWeightedMean(alpha=alpha) for alpha in [0.2, 0.5, 0.9]]
-
+with LogTime():
+    # full_df, added_features = add_ewma(full_df, alphas=[0.2, 0.5, 0.9], column="energy_consumption", ts_id="LCLid", use_32_bit=True)
+    full_df, added_features = add_ewma(
+        full_df,
+        spans=[40320, 5760, 240],
+        column="y",
+        ts_id="unique_id",
+        use_32_bit=True,
+    )
+print(f"Features Created: {','.join(added_features)}")
 
 # === Temporal Features ===
 
-temporal_features = [
-    "month",
-    "quarter",
-    "is_quarter_end",
-    "is_quarter_start",
-    "is_year_end",
-    "is_year_start",
-    "is_month_start",
-    "is_month_end",
-    "week",
-    "day",
-    "dayofweek",
-    "dayofyear",
-    "hour",
-    "minute",
-]
-
-# === Calculating the Features ===
-fcst = MLForecast(
-        models=[],
-        freq='15s',
-        lags=lags,
-        lag_transforms=lag_transforms,
-        date_features=temporal_features,
-        )
-
 with LogTime():
-    transformed_df = fcst.preprocess(
-            full_df,
-            time_col="ds",
-            id_col="unique_id",
-            target_col="y",
-            static_features=[],
-            dropna=False,
-            )
+    full_df, added_features = add_temporal_features(
+        full_df,
+        field_name="ds",
+        frequency="15s",
+        add_elapsed=True,
+        drop=False,
+        use_32_bit=True,
+    )
+print(f"Features Created: {','.join(added_features)}")
 
 # === Fourier Terms ===
 with LogTime():
-    transformed_df, added_features = bulk_add_fourier_features(
-            transformed_df,
+    full_df, added_features = bulk_add_fourier_features(
+            full_df,
             ["month", "hour", "minute"],
             max_values=[12, 24, 60],
             n_fourier_terms=5,
@@ -150,7 +147,7 @@ print(f"Features Created: {','.join(added_features)}")
 
 # === Plotting Fourier Terms ===
 plot_df = (
-    transformed_df[["month", "month_sin_1"]]
+    full_df[["month", "month_sin_1"]]
     .drop_duplicates()
     .sort_values("month")
 )
@@ -200,16 +197,16 @@ fig.show()
 # === Saving the feature engineered file ===
 # print(transformed_df.info(memory_usage="deep", verbose=False))
 
-full_df = pd.merge(transformed_df, full_df_type_map, on=["ds", "unique_id"], how="left")
+full_df = pd.merge(full_df, full_df_type_map, on=["ds", "unique_id"], how="left")
 
 full_df[full_df["type"] == "train"].drop(columns="type").to_parquet(
-        preprocessed / "selected_blocks_train_missing_imputed_feature_engg_mlforecast.parquet"
+        preprocessed / "selected_blocks_train_missing_imputed_feature_engg.parquet"
 )
 full_df[full_df["type"] == "val"].drop(columns="type").to_parquet(
-        preprocessed / "selected_blocks_val_missing_imputed_feature_engg_mlforecast.parquet"
+        preprocessed / "selected_blocks_val_missing_imputed_feature_engg.parquet"
 )
 full_df[full_df["type"] == "test"].drop(columns="type").to_parquet(
-        preprocessed / "selected_blocks_test_missing_imputed_feature_engg_mlforecast.parquet"
+        preprocessed / "selected_blocks_test_missing_imputed_feature_engg.parquet"
 )
 # print(full_df.head())
 # print(transformed_df.columns)

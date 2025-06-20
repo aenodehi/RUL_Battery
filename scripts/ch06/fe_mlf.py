@@ -102,6 +102,7 @@ lag_transforms[40320] += [
 # === EWMA ===
 lag_transforms[1] += [ExponentiallyWeightedMean(alpha=alpha) for alpha in [0.2, 0.5, 0.9]]
 
+# === Temporal Features ===
 temporal_features = [
     "month",
     "quarter",
@@ -195,7 +196,7 @@ fig.update_xaxes(
     ticktext=np.arange(1, 13).tolist() * 3,
     tickvals=np.arange(len(plot_df)) + 1,
 )
-fig.write_image(f"imgs/ch06/fourier.png")
+# fig.write_image(f"imgs/ch06/fourier.png")
 fig.show()
 
 
