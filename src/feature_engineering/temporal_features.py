@@ -106,6 +106,22 @@ def time_features_from_frequency_str(freq_str: str) -> List[str]:
             "Hour",
             "Minute",
         ],
+        offsets.Second: [
+                "Month",
+                "Quarter",
+                "Is_quarter_end",
+                "Is_quarter_start",
+                "Is_year_end",
+                "Is_year_start",
+                "Is_month_start",
+                "Week",
+                "Day",
+                "Dayofweek",
+                "Dayofyear",
+                "Hour",
+                "Minute",
+                "Second",
+        ],
     }
 
     offset = to_offset(freq_str)
