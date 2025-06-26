@@ -30,6 +30,13 @@ from src.feature_engineering.temporal_features import (
     bulk_add_fourier_features,
 )
 from src.feature_engineering.autoregressive_features import add_lags
+from src.feature_engineering.autoregressive_features import add_rolling_features
+from src.feature_engineering.autoregressive_features import (
+    add_seasonal_rolling_features,
+)
+
+from src.feature_engineering.autoregressive_features import add_ewma
+from src.feature_engineering.temporal_features import add_temporal_features
 
 np.random.seed(42)
 tqdm.pandas()
@@ -73,12 +80,11 @@ lags = (
         (np.arange(5) + 1).tolist() +
         (np.arange(5) + 240).tolist() +
         (np.arange(5) + 5760).tolist() 
-        #(np.arange(5) + 40320).tolist()
         )
 
 with LogTime():
     full_df, added_features = add_lags(
-            full_df, lags=lads, column="y", ts_id="unique_id", use_32_bit=True
+            full_df, lags=lags, column="y", ts_id="unique_id", use_32_bit=True
             )
 print(f"Features Created: {','.join(added_features)}")
 
@@ -95,7 +101,6 @@ with LogTime():
 print(f"Features Created: {','.join(added_features)}")
 
 # === Seasonal Rolling ===
-
 with LogTime():
     full_df, added_features = add_seasonal_rolling_features(
         full_df,
@@ -110,7 +115,6 @@ print(f"Features Created: {','.join(added_features)}")
 
 # === EWMA ===
 with LogTime():
-    # full_df, added_features = add_ewma(full_df, alphas=[0.2, 0.5, 0.9], column="energy_consumption", ts_id="LCLid", use_32_bit=True)
     full_df, added_features = add_ewma(
         full_df,
         spans=[40320, 5760, 240],
@@ -121,7 +125,6 @@ with LogTime():
 print(f"Features Created: {','.join(added_features)}")
 
 # === Temporal Features ===
-
 with LogTime():
     full_df, added_features = add_temporal_features(
         full_df,
@@ -137,7 +140,7 @@ print(f"Features Created: {','.join(added_features)}")
 with LogTime():
     full_df, added_features = bulk_add_fourier_features(
             full_df,
-            ["month", "hour", "minute"],
+            ["ds_Month", "ds_Hour", "ds_Minute"],
             max_values=[12, 24, 60],
             n_fourier_terms=5,
             use_32_bit=True,
@@ -147,15 +150,14 @@ print(f"Features Created: {','.join(added_features)}")
 
 # === Plotting Fourier Terms ===
 plot_df = (
-    full_df[["month", "month_sin_1"]]
+    full_df[["ds_Month", "ds_Month_sin_1"]]
     .drop_duplicates()
-    .sort_values("month")
+    .sort_values("ds_Month")
 )
 
 plot_df.columns = ["calendar", "fourier"]
 
 plot_df = pd.concat([plot_df, plot_df, plot_df]).reset_index(drop=True)
-# plot_df.reset_index(drop=True, inplace=True)
 
 plot_df.reset_index(inplace=True)
 plot_df["index"] += 1
@@ -176,13 +178,8 @@ fig.update_layout(
         "font": {"size": 20},
     },
     legend_title=None,
-    # yaxis=dict(
-    #     # title_text=ylabel,
-    #     # titlefont=dict(size=12),
-    # ),
     xaxis=dict(
         title_text="Time",
-        # titlefont=dict(size=12),
     ),
 )
 fig.update_yaxes(matches=None)
@@ -195,9 +192,8 @@ fig.show()
 
 
 # === Saving the feature engineered file ===
-# print(transformed_df.info(memory_usage="deep", verbose=False))
 
-full_df = pd.merge(full_df, full_df_type_map, on=["ds", "unique_id"], how="left")
+full_df = pd.merge(full_df, full_df_type_map[["ds", "unique_id", "type"]], on=["ds", "unique_id"], how="left")
 
 full_df[full_df["type"] == "train"].drop(columns="type").to_parquet(
         preprocessed / "selected_blocks_train_missing_imputed_feature_engg.parquet"
@@ -208,5 +204,3 @@ full_df[full_df["type"] == "val"].drop(columns="type").to_parquet(
 full_df[full_df["type"] == "test"].drop(columns="type").to_parquet(
         preprocessed / "selected_blocks_test_missing_imputed_feature_engg.parquet"
 )
-# print(full_df.head())
-# print(transformed_df.columns)

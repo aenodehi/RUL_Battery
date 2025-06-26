@@ -78,12 +78,6 @@ lags = (
         #(np.arange(5) + 40320).tolist()
         )
 
-# with LogTime():
-#     full_df,added_features = add_lags(
-#             full_df, lags=lags, column="y", ts_id="unique_id", use_32_bit=True
-#             )
-# print(f"Features Created: {','.join(added_features)}")
-
 # === Rolling ===
 lag_transforms[1] += [RollingMean(window_size=n) for n in [3, 6, 12, 48]] + [
         RollingStd(window_size=n) for n in [3, 6, 12, 48]
@@ -201,9 +195,7 @@ fig.show()
 
 
 # === Saving the feature engineered file ===
-# print(transformed_df.info(memory_usage="deep", verbose=False))
-
-full_df = pd.merge(transformed_df, full_df_type_map, on=["ds", "unique_id"], how="left")
+full_df = pd.merge(transformed_df, full_df_type_map[["ds", "unique_id", "type"]], on=["ds", "unique_id"], how="left")
 
 full_df[full_df["type"] == "train"].drop(columns="type").to_parquet(
         preprocessed / "selected_blocks_train_missing_imputed_feature_engg_mlforecast.parquet"
@@ -214,5 +206,3 @@ full_df[full_df["type"] == "val"].drop(columns="type").to_parquet(
 full_df[full_df["type"] == "test"].drop(columns="type").to_parquet(
         preprocessed / "selected_blocks_test_missing_imputed_feature_engg_mlforecast.parquet"
 )
-# print(full_df.head())
-# print(transformed_df.columns)
