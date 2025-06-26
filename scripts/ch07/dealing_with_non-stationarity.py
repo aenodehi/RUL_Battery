@@ -44,7 +44,7 @@ for uid in tqdm(train_df["unique_id"].unique()):
 
     # 1) Reindex & fill to uniform 15s
     full_idx = pd.date_range(ser.index.min(), ser.index.max(), freq=FREQ)
-    ser = ser.reindex(full_idx).interpolate("time").ffill().bfill()
+    # ser = ser.reindex(full_idx).interpolate("time").ffill().bfill()
     ser.index.name = "ds"
 
     # 2) Instantiate and fit on first point
