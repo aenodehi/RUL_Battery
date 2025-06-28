@@ -3,8 +3,12 @@ import sys
 from pathlib import Path
 import time
 import os
+import plotly.express as px
+import plotly.graph_objects as go
+
 from typing import List, Optional
 from functools import partial
+from src.utils import ts_utils
 #from src.utils.evaluation import evaluate_performance
 from src.models.statsforecast_models import Naive, SeasonalNaive
 from utilsforecast.losses import mase, mae, mse, rmse, smape
@@ -22,6 +26,8 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 preprocessed = Path("./data")
 output_dir = Path("imgs")
 output_dir.mkdir(exist_ok=True)
+output = Path("data/B0005")
+output.mkdir(exist_ok=True)
 
 # === Load Data ===
 try:
@@ -114,14 +120,14 @@ baseline_val_metrics_df = evaluate(
                         time_col = 'ds',
                         target_col = 'y',
                         )
-print(baseline_val_metrics_df.head())
+#print(baseline_val_metrics_df.head())
 
 
 baseline_val_metrics_df_pivot = (baseline_val_metrics_df
     .melt(id_vars = ['unique_id','metric'], value_vars = model_names, var_name ='Algorithm', value_name='score')
     .pivot_table(index = ['unique_id','Algorithm'], columns = 'metric', values = 'score', observed = 'True')
 ).reset_index()
-print(baseline_val_metrics_df_pivot.head())
+#print(baseline_val_metrics_df_pivot.head())
 
 # === 3) Evaluate on Test ===
 
@@ -134,14 +140,14 @@ baseline_test_metrics_df = evaluate(
                         time_col = 'ds',
                         target_col = 'y',
                         )
-print(baseline_test_metrics_df.head())
+#print(baseline_test_metrics_df.head())
 
 
 baseline_test_metrics_df_pivot = (baseline_test_metrics_df
     .melt(id_vars = ['unique_id','metric'], value_vars = model_names, var_name ='Algorithm', value_name='score')
     .pivot_table(index = ['unique_id','Algorithm'], columns = 'metric', values = 'score', observed = 'True')
 ).reset_index()
-print(baseline_test_metrics_df_pivot.head())
+#print(baseline_test_metrics_df_pivot.head())
 
 
 # === 4) Prepare Prediction DataFrames ===
@@ -172,6 +178,124 @@ snaive_pred_test_df = (crossval_test_df
 baseline_metrics_val_df = baseline_val_metrics_df_pivot.copy()
 baseline_metrics_test_df = baseline_test_metrics_df_pivot.copy()
 
-print(naive_pred_val_df.head())
+#print(naive_pred_val_df.head())
+
+# === Overall Metrics ===
+overall_metrics_naive_val = {
+    "MAE": ts_utils.mae(crossval_val_df["y"], crossval_val_df["Naive"]),
+    "MSE": ts_utils.mse(crossval_val_df["y"], crossval_val_df["Naive"]),
+    "meanMASE": baseline_val_metrics_df[baseline_val_metrics_df.metric =='mase']["Naive"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(crossval_val_df["y"], crossval_val_df["Naive"])
+}
+#print(overall_metrics_naive_val)
+
+overall_metrics_snaive_val = {
+    "MAE": ts_utils.mae(crossval_val_df["y"], crossval_val_df["SeasonalNaive"]),
+    "MSE": ts_utils.mse(crossval_val_df["y"], crossval_val_df["SeasonalNaive"]),
+    "meanMASE": baseline_val_metrics_df[baseline_val_metrics_df.metric =='mase']["SeasonalNaive"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(crossval_val_df["y"], crossval_val_df["SeasonalNaive"])
+}
+
+overall_metrics_naive_test = {
+    "MAE": ts_utils.mae(crossval_test_df["y"], crossval_test_df["Naive"]),
+    "MSE": ts_utils.mse(crossval_test_df["y"], crossval_test_df["Naive"]),
+    "meanMASE": baseline_test_metrics_df[baseline_test_metrics_df.metric =='mase']["Naive"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(crossval_test_df["y"], crossval_test_df["Naive"])
+}
 
 
+overall_metrics_snaive_test = {
+    "MAE": ts_utils.mae(crossval_test_df["y"], crossval_test_df["SeasonalNaive"]),
+    "MSE": ts_utils.mse(crossval_test_df["y"], crossval_test_df["SeasonalNaive"]),
+    "meanMASE": baseline_test_metrics_df[baseline_test_metrics_df.metric =='mase']["SeasonalNaive"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(crossval_test_df["y"], crossval_test_df["SeasonalNaive"])
+}
+
+
+# === Evaluation of Baseline Forecast ===
+
+agg_metric_val_df = pd.DataFrame([overall_metrics_naive_val, overall_metrics_snaive_val], index=["Naive","Seasonal Naive"])
+
+agg_metric_val_df.style.format({"MAE": "{:.3f}", 
+                          "MSE": "{:.3f}", 
+                          "meanMASE": "{:.3f}", 
+                          "Forecast Bias": "{:.2f}%"}).highlight_min(color='lightgreen')
+
+#print(agg_metric_val_df)
+
+
+agg_metric_test_df = pd.DataFrame([overall_metrics_naive_test, overall_metrics_snaive_test], index=["Naive","Seasonal Naive"])
+
+agg_metric_test_df.style.format({"MAE": "{:.3f}", 
+                          "MSE": "{:.3f}", 
+                          "meanMASE": "{:.3f}", 
+                          "Forecast Bias": "{:.2f}%"}).highlight_min(color='lightgreen')
+
+#print(agg_metric_val_df)
+
+# === Fig ===
+fig_mase = px.histogram(baseline_val_metrics_df_pivot, 
+                   x="mase", 
+                   color="Algorithm",
+                   pattern_shape="Algorithm", 
+                   marginal="box", 
+                   nbins=500, 
+                   barmode="overlay",
+                   histnorm="probability density")
+fig_mase = format_plot(fig_mase, xlabel="MASE", ylabel="Probability Density", title="Distribution of MASE in the dataset")
+fig_mase.update_layout(xaxis_range=[0,3.2])
+# fig_mase.write_image("imgs/chapter_8/mase_dist.png")
+#fig_mase.show()
+
+fig_mae = px.histogram(baseline_val_metrics_df_pivot, 
+                   x="mae", 
+                   color="Algorithm",
+                   pattern_shape="Algorithm", 
+                   marginal="box", 
+                   nbins=100, 
+                   barmode="overlay",
+                   histnorm="probability density")
+fig_mae = format_plot(fig_mae, xlabel="MAE", ylabel="Probability Density", title="Distribution of MAE in the dataset")
+# fig_mae.write_image("imgs/chapter_8/mae_dist.png")
+#fig_mae.show()
+
+fig_mse = px.histogram(baseline_val_metrics_df_pivot, 
+                   x="mse", 
+                   color="Algorithm",
+                   pattern_shape="Algorithm", 
+                   marginal="box", 
+                   nbins=500, 
+                   barmode="overlay",
+                   histnorm="probability density")
+fig_mse = format_plot(fig_mse, xlabel="MSE", ylabel="Probability Density", title="Distribution of MSE in the dataset")
+fig_mse.update_layout(xaxis_range=[0,0.6])
+# fig_mse.write_image("imgs/chapter_8/mse_dist.png")
+#fig_mse.show()
+
+fig_bias = px.histogram(baseline_val_metrics_df_pivot, 
+                   x="forecast_bias", 
+                   color="Algorithm",
+                   pattern_shape="Algorithm", 
+                   marginal="box", 
+                   nbins=250,
+                   barmode="overlay",
+                   histnorm="probability density")
+fig_bias = format_plot(fig_bias, xlabel="Forecast Bias", ylabel="Probability Density", title="Distribution of Forecast Bias in the dataset")
+fig_bias.update_layout(xaxis_range=[-40,40])
+# fig_bias.write_image("imgs/chapter_8/bias_dist.png")
+#fig_bias.show()
+
+
+# ===  ===
+baseline_pred_val_df = naive_pred_val_df.reset_index().merge(snaive_pred_val_df.reset_index().drop(columns='voltage_measured'), on=['ds','unique_id'], how='outer')
+baseline_pred_test_df = naive_pred_test_df.reset_index().merge(snaive_pred_test_df.reset_index().drop(columns='voltage_measured'), on=['ds','unique_id'], how='outer')
+print(baseline_pred_val_df.head())
+print(baseline_pred_test_df.head())
+
+# === Saving the Baseline Forecasts and Metrics ===
+baseline_pred_val_df.to_pickle(output/"single_step_backtesting_baseline_prediction_val_df.pkl")
+baseline_metrics_val_df.to_pickle(output/"single_step_backtesting_baseline_metrics_val_df.pkl")
+agg_metric_val_df.to_pickle(output/"single_step_backtesting_baseline_aggregate_metrics_val.pkl")
+baseline_pred_test_df.to_pickle(output/"single_step_backtesting_baseline_prediction_test_df.pkl")
+baseline_metrics_test_df.to_pickle(output/"single_step_backtesting_baseline_metrics_test_df.pkl")
+agg_metric_test_df.to_pickle(output/"single_step_backtesting_baseline_aggregate_metrics_test.pkl")
