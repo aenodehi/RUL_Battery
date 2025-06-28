@@ -104,6 +104,7 @@ fcst_mase = partial(mase, seasonality=1)
 fcst_mase.__name__ = "mase"
 forecast_bias_NIXTLA.__name__ = "forecast_bias"
 
+# === 2) Evaluate on Validation ===
 baseline_val_metrics_df = evaluate(
                         df   = crossval_val_df.drop(['cutoff'], axis =1 ), 
                         metrics  = [mse, mae, rmse, fcst_mase, forecast_bias_NIXTLA],
@@ -114,3 +115,63 @@ baseline_val_metrics_df = evaluate(
                         target_col = 'y',
                         )
 print(baseline_val_metrics_df.head())
+
+
+baseline_val_metrics_df_pivot = (baseline_val_metrics_df
+    .melt(id_vars = ['unique_id','metric'], value_vars = model_names, var_name ='Algorithm', value_name='score')
+    .pivot_table(index = ['unique_id','Algorithm'], columns = 'metric', values = 'score', observed = 'True')
+).reset_index()
+print(baseline_val_metrics_df_pivot.head())
+
+# === 3) Evaluate on Test ===
+
+baseline_test_metrics_df = evaluate(
+                        df   = crossval_test_df.drop(['cutoff'], axis =1 ), 
+                        metrics  = [mse, mae, rmse, fcst_mase, forecast_bias_NIXTLA],
+                        models=model_names,
+                        train_df  = tr_vl[['ds', 'unique_id', 'y']],
+                        id_col = 'unique_id',
+                        time_col = 'ds',
+                        target_col = 'y',
+                        )
+print(baseline_test_metrics_df.head())
+
+
+baseline_test_metrics_df_pivot = (baseline_test_metrics_df
+    .melt(id_vars = ['unique_id','metric'], value_vars = model_names, var_name ='Algorithm', value_name='score')
+    .pivot_table(index = ['unique_id','Algorithm'], columns = 'metric', values = 'score', observed = 'True')
+).reset_index()
+print(baseline_test_metrics_df_pivot.head())
+
+
+# === 4) Prepare Prediction DataFrames ===
+# Naive
+
+naive_pred_val_df = (crossval_val_df
+                     .rename(columns = {'y':'voltage_measured','Naive':'naive_predictions'})
+                     .drop(['cutoff','SeasonalNaive'],axis=1).set_index('ds')
+)
+
+naive_pred_test_df = (crossval_test_df
+                     .rename(columns = {'y':'voltage_measured','Naive':'naive_predictions'})
+                     .drop(['cutoff','SeasonalNaive'],axis=1).set_index('ds')
+)
+
+# Seasonal-naive
+
+snaive_pred_val_df = (crossval_val_df
+                     .rename(columns = {'y':'voltage_measured','SeasonalNaive':'snaive_predictions'})
+                     .drop(['cutoff','Naive'],axis=1).set_index('ds')
+)
+
+snaive_pred_test_df = (crossval_test_df
+                     .rename(columns = {'y':'voltage_measured','SeasonalNaive':'snaive_predictions'})
+                     .drop(['cutoff','Naive'],axis=1).set_index('ds')
+)
+
+baseline_metrics_val_df = baseline_val_metrics_df_pivot.copy()
+baseline_metrics_test_df = baseline_test_metrics_df_pivot.copy()
+
+print(naive_pred_val_df.head())
+
+
