@@ -31,29 +31,62 @@ class MissingValueConfig:
         default_factory=list,
         metadata={"help": "Column names which should be filled using 0"},
     )
-
-    def impute_missing_values(self, df: pd.DataFrame):
+    
+    
+    def impute_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
-        bfill_columns = intersect_list(df.columns, self.bfill_columns)
-        df[bfill_columns] = df[bfill_columns].fillna(method="bfill")
-        ffill_columns = intersect_list(df.columns, self.ffill_columns)
-        df[ffill_columns] = df[ffill_columns].fillna(method="ffill")
-        zero_fill_columns = intersect_list(df.columns, self.zero_fill_columns)
-        df[zero_fill_columns] = df[zero_fill_columns].fillna(0)
-        check = df.isnull().any()
-        missing_cols = check[check].index.tolist()
-        missing_numeric_cols = intersect_list(
-            missing_cols, df.select_dtypes([np.number]).columns.tolist()
-        )
-        missing_object_cols = intersect_list(
-            missing_cols, df.select_dtypes(["object"]).columns.tolist()
-        )
-        # Filling with mean and NA as default fillna strategy
-        df[missing_numeric_cols] = df[missing_numeric_cols].fillna(
-            df[missing_numeric_cols].mean()
-        )
-        df[missing_object_cols] = df[missing_object_cols].fillna("NA")
+
+        # Filter existing columns
+        bfill_cols = [col for col in self.bfill_columns if col in df.columns]
+        ffill_cols = [col for col in self.ffill_columns if col in df.columns]
+        zero_fill_cols = [col for col in self.zero_fill_columns if col in df.columns]
+
+        if bfill_cols:
+            df[bfill_cols] = df[bfill_cols].bfill()
+
+        if ffill_cols:
+            df[ffill_cols] = df[ffill_cols].ffill()
+
+        if zero_fill_cols:
+            df[zero_fill_cols] = df[zero_fill_cols].fillna(0)
+
+        # Handle remaining missing values
+        missing_cols = df.columns[df.isnull().any()]
+        numeric_cols = df[missing_cols].select_dtypes(include=np.number).columns
+        object_cols = df[missing_cols].select_dtypes(exclude=np.number).columns
+
+        if len(numeric_cols) > 0:
+            print(f"[WARNING] Filling missing numeric columns with mean: {list(numeric_cols)}")
+            df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+
+        if len(object_cols) > 0:
+            print(f"[WARNING] Filling missing object columns with 'NA': {list(object_cols)}")
+            df[object_cols] = df[object_cols].fillna("NA")
+
         return df
+
+#     def impute_missing_values(self, df: pd.DataFrame):
+#         df = df.copy()
+#         bfill_columns = intersect_list(df.columns, self.bfill_columns)
+#         df[bfill_columns] = df[bfill_columns].fillna(method="bfill")
+#         ffill_columns = intersect_list(df.columns, self.ffill_columns)
+#         df[ffill_columns] = df[ffill_columns].fillna(method="ffill")
+#         zero_fill_columns = intersect_list(df.columns, self.zero_fill_columns)
+#         df[zero_fill_columns] = df[zero_fill_columns].fillna(0)
+#         check = df.isnull().any()
+#         missing_cols = check[check].index.tolist()
+#         missing_numeric_cols = intersect_list(
+#             missing_cols, df.select_dtypes([np.number]).columns.tolist()
+#         )
+#         missing_object_cols = intersect_list(
+#             missing_cols, df.select_dtypes(["object"]).columns.tolist()
+#         )
+#         # Filling with mean and NA as default fillna strategy
+#         df[missing_numeric_cols] = df[missing_numeric_cols].fillna(
+#             df[missing_numeric_cols].mean()
+#         )
+#         df[missing_object_cols] = df[missing_object_cols].fillna("NA")
+#         return df
 
 
 @dataclass
