@@ -49,72 +49,35 @@ output_img = Path("imgs/ch08")
 output_img.mkdir(exist_ok=True)
 
 
-# === Load Data with proper error visibility ===
-
-def load_required_file(path):
-    if not path.exists():
-        raise FileNotFoundError(f"Required file not found: {path}")
-    return path
-
+# === Load Data ===
 try:
-    train_path = load_required_file(preprocessed / "selected_blocks_train_missing_imputed_feature_engg.parquet")
-    val_path = load_required_file(preprocessed / "selected_blocks_val_missing_imputed_feature_engg.parquet")
-    test_path = load_required_file(preprocessed / "selected_blocks_test_missing_imputed_feature_engg.parquet")
-    stat_target_path = load_required_file(preprocessed / "selected_blocks_train_val_auto_stat_target.parquet")
-    transformer_path = load_required_file(preprocessed / "auto_transformer_pipelines_train_val.pkl")
-
-    train_df = pd.read_parquet(train_path)
-    val_df = pd.read_parquet(val_path)
+    train_df = pd.read_parquet(preprocessed/"selected_blocks_train_missing_imputed_feature_engg.parquet")
+    val_df = pd.read_parquet(
+        preprocessed / "selected_blocks_val_missing_imputed_feature_engg.parquet"
+    )
     train_df = pd.concat([train_df, val_df])
     del val_df
+    test_df = pd.read_parquet(
+        preprocessed / "selected_blocks_test_missing_imputed_feature_engg.parquet"
+    )
 
-    test_df = pd.read_parquet(test_path)
-    auto_stat_target = pd.read_parquet(stat_target_path)
-
-    transformer_pipelines = joblib.load(transformer_path)
+    auto_stat_target = pd.read_parquet(
+        preprocessed / "selected_blocks_train_val_auto_stat_target.parquet"
+    )
+    transformer_pipelines = joblib.load(
+        preprocessed / "auto_transformer_pipelines_train_val.pkl"
+    )
 
     train_df = (
         train_df.set_index(["unique_id", "ds"]).join(auto_stat_target).reset_index()
     )
 
-except FileNotFoundError as e:
-    display(HTML(f"""
-    <div class="alert alert-block alert-danger">
-    <b>Error:</b> {e}<br>
-    Please ensure you've run Chapters 06 and 07 correctly.
+except FileNotFoundError:
+    display(HTML("""
+    <div class="alert alert-block alert-warning">
+    <b>Warning!</b> File not found. Please make sure you have run in Chapter06 & Chapter07
     </div>
     """))
-    raise
-
-# === Load Data ===
-# try:
-#     train_df = pd.read_parquet(preprocessed/"selected_blocks_train_missing_imputed_feature_engg.parquet")
-#     val_df = pd.read_parquet(
-#         preprocessed / "selected_blocks_val_missing_imputed_feature_engg.parquet"
-#     )
-#     train_df = pd.concat([train_df, val_df])
-#     del val_df
-#     test_df = pd.read_parquet(
-#         preprocessed / "selected_blocks_test_missing_imputed_feature_engg.parquet"
-#     )
-# 
-#     auto_stat_target = pd.read_parquet(
-#         preprocessed / "selected_blocks_train_val_auto_stat_target.parquet"
-#     )
-#     transformer_pipelines = joblib.load(
-#         preprocessed / "auto_transformer_pipelines_train_val.pkl"
-#     )
-# 
-#     train_df = (
-#         train_df.set_index(["unique_id", "ds"]).join(auto_stat_target).reset_index()
-#     )
-# 
-# except FileNotFoundError:
-#     display(HTML("""
-#     <div class="alert alert-block alert-warning">
-#     <b>Warning!</b> File not found. Please make sure you have run in Chapter06 & Chapter07
-#     </div>
-#     """))
  
 #Loading the single step backtesting baselines for validation
 try:
