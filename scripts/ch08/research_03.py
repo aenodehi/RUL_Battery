@@ -17,6 +17,11 @@ from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRFRegressor
+from lightgbm import LGBMRegressor
+
 from src.forecasting.ml_forecasting import (
     FeatureConfig,
     MissingValueConfig,
@@ -24,6 +29,8 @@ from src.forecasting.ml_forecasting import (
     ModelConfig,
     calculate_metrics,
 )
+
+from src.utils import ts_utils
 from src.utils import plotting_utils
 from src.utils.general import LogTime
 from src.utils.ts_utils import  forecast_bias, metrics_adapter, mae, mse, mase
@@ -192,8 +199,10 @@ def highlight_abs_min(s, props=''):
 
 # === Linear Regression ===
 model_config = ModelConfig(
-    model=make_pipeline(StandardScaler(), LinearRegression()),
+    #model=make_pipeline(StandardScaler(), LinearRegression()),
+    model=LinearRegression(),
     name="Linear Regression",
+    normalize=True,
     fill_missing=True,
 )
 with LogTime() as timer:
@@ -217,17 +226,305 @@ pred_df = pred_df.reset_index()
 # print(metrics)
 # print(y_pred)
 # print(pred_df.columns)
+# print("Columns:", feat_df.columns.tolist())
 
-fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
-fig = format_plot(fig, title=f"{model_config.name}: MAE: {metrics['MAE']:.4f} | MSE: {metrics['MSE']:.4f} | MASE: {metrics['MASE']:.4f} | Bias: {metrics['Forecast Bias']:.4f}")
-fig.update_xaxes(type="date", range=["2014-01-01", "2014-01-08"])
-fig.write_image(output_img/"lin_reg.png")
-fig.show()
+# fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
+# fig = format_plot(fig, title=f"{model_config.name}: MAE: {metrics['MAE']:.4f} | MSE: {metrics['MSE']:.4f} | MASE: {metrics['MASE']:.4f} | Bias: {metrics['Forecast Bias']:.4f}")
+# fig.update_xaxes(type="date", range=["2014-01-01", "2014-01-08"])
+# fig.write_image(output_img/"lin_reg.png")
+# #fig.show()
+# 
+# fig_fimp = px.bar(feat_df.head(15), x="feature", y="importance")
+# format_plot(fig_fimp, xlabel="Features", ylabel="Importance", title=f"Feature Importance - {model_config.name}", font_size=12)
+# fig_fimp.write_image(output_img/"lin_reg_fimp.png")
+# #fig_fimp.show()
 
-fig_fimp = px.bar(feat_df.head(15), x="feature", y="importance")
-format_plot(fig_fimp, xlabel="Features", ylabel="Importance", title=f"Feature Importance - {model_config.name}", font_size=12)
-fig_fimp.write_image(output_img/"ch08/lin_reg_fimp.png")
-fig_fimp.show()
+# === Ridge Regression (L2) ===
+model_config = ModelConfig(
+    model=RidgeCV(), 
+    name="Ridge Regression", 
+    # RidgeCV is sensitive to normalized data
+    normalize=True, 
+    # RidgeCV does not handle missing values
+    fill_missing=True
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df,= evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+# print(metrics)
+
+# fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
+
+# fig = format_plot(fig, title=f"{model_config.name}: MAE: {metrics['MAE']:.4f} | MSE: {metrics['MSE']:.4f} | MASE: {metrics['MASE']:.4f} | Bias: {metrics['Forecast Bias']:.4f}")
+# fig.update_xaxes(type="date", range=["2014-01-01", "2014-01-08"])
+# fig.write_image(output_img/"ridge_reg.png")
+# fig.show()
+
+#  fig = px.bar(feat_df.head(15), x="feature", y="importance")
+# format_plot(fig, xlabel="Features", ylabel="Importance", title=f"Feature Importance - {model_config.name}", font_size=12)
+# fig.write_image(output_img/"ridge_reg_fimp.png")
+# fig.show()
+
+# === Lasso Regression (L1) ===
+model_config = ModelConfig(
+    model=LassoCV(), 
+    name="Lasso Regression", 
+    # LassoCV is sensitive to normalized data
+    normalize=True, 
+    # LassoCV does not handle missing values
+    fill_missing=True
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df, = evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+# print(metrics)
+
+# fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
+
+# fig = format_plot(fig, title=f"{model_config.name}: MAE: {metrics['MAE']:.4f} | MSE: {metrics['MSE']:.4f} | MASE: {metrics['MASE']:.4f} | Bias: {metrics['Forecast Bias']:.4f}")
+# fig.update_xaxes(type="date", range=["2014-01-01", "2014-01-08"])
+# fig.write_image(output_img/"lasso_reg.png")
+# fig.show()
+
+# === Decision Tree ===
+model_config = ModelConfig(
+    model=DecisionTreeRegressor(max_depth=4, random_state=42),
+    name="Decision Tree",
+    # Decision Tree is not affected by normalization
+    normalize=False,
+    # Decision Tree in scikit-learn does not handle missing values
+    fill_missing=True,
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df = evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+# print(metrics)
+
+
+# === Bagging and Boosting Trees ===
+
+# === Random Forest ===
+model_config = ModelConfig(
+    model=RandomForestRegressor(random_state=42, max_depth=4),
+    name="Random Forest",
+    # RandomForest is not affected by normalization
+    normalize=False,
+    # RandomForest in scikit-learn does not handle missing values
+    fill_missing=True,
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df = evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+
+
+# === XGBoost Random Forest ===
+
+model_config = ModelConfig(
+    model=XGBRFRegressor(random_state=42, max_depth=4),
+    name="XGB Random Forest",
+    # XGBRF is not affected by normalization
+    normalize=False,
+    # XGBRF handles missing values
+    fill_missing=False,
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df = evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+
+
+# === LightGBM ===
+
+model_config = ModelConfig(
+    model=LGBMRegressor(random_state=42),
+    name="LightGBM",
+    # LightGBM is not affected by normalization
+    normalize=False,
+    # LightGBM handles missing values
+    fill_missing=False,
+)
+with LogTime() as timer:
+    y_pred, metrics, feat_df = evaluate_model(
+        model_config,
+        feat_config,
+        missing_value_config,
+        train_features,
+        train_target,
+        test_features,
+        test_target,
+    )
+metrics["Time Elapsed"] = timer.elapsed
+metric_record.append(metrics)
+pred_df = pred_df.join(y_pred)
+
+
+# ===Summary ===
+formatted = pd.DataFrame(metric_record).style.format({"MAE": "{:.4f}", 
+                          "MSE": "{:.4f}", 
+                          "MASE": "{:.4f}", 
+                          "Forecast Bias": "{:.2f}%"})
+formatted.highlight_min(color='lightgreen', subset=["MAE","MSE","MASE"]).apply(highlight_abs_min, props='color:black;background-color:lightgreen', axis=0, subset=['Forecast Bias'])
+
+html = formatted.to_html()
+
+# Save to file 
+#with open(output_img/"formatted_metrics.html", "w") as f:
+#    f.write(html)
+
+#print("Saved formatted metrics to 'imgs/ch08/formatted_metrics.html'")
+
+# === Running ML Forecast for all consumers ===
+
+# Running Lasso Regression, XGB Random Forest, and LightGBM
+
+lcl_ids = sorted(train_df.unique_id.unique())
+models_to_run = [
+    ModelConfig(
+        model=LassoCV(), name="Lasso Regression", normalize=True, fill_missing=True
+    ),
+    ModelConfig(
+        model=XGBRFRegressor(random_state=42, max_depth=4),
+        name="XGB Random Forest",
+        normalize=False,
+        fill_missing=False,
+    ),
+    ModelConfig(
+        model=LGBMRegressor(random_state=42),
+        name="LightGBM",
+        normalize=False,
+        fill_missing=False,
+    ),
+]
+
+all_preds = []
+all_metrics = []
+
+# We can parallelize this loop to run this faster
+with LogTime() as timer:
+    for lcl_id in tqdm(lcl_ids):
+        for model_config in models_to_run:
+            model_config = model_config.clone()
+            X_train, y_train, _ = feat_config.get_X_y(
+                train_df.loc[train_df.unique_id == lcl_id, :],
+                categorical=False,
+                exogenous=False,
+            )
+            X_test, y_test, _ = feat_config.get_X_y(
+                test_df.loc[test_df.unique_id == lcl_id, :], categorical=False, exogenous=False
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                y_pred, metrics, feat_df = evaluate_model(
+                    model_config,
+                    feat_config,
+                    missing_value_config,
+                    X_train,
+                    y_train,
+                    X_test,
+                    y_test,
+                )
+            y_pred.name = "predictions"
+            y_pred = y_pred.to_frame()
+            y_pred["unique_id"] = lcl_id
+            y_pred["Algorithm"] = model_config.name
+            metrics["unique_id"] = lcl_id
+            metrics["Algorithm"] = model_config.name
+            y_pred["voltage_measured"] = y_test.values
+            all_preds.append(y_pred)
+            all_metrics.append(metrics)
+
+
+pred_df = pd.concat(all_preds)
+print(pred_df.head())
+
+metrics_df = pd.DataFrame(all_metrics)
+print(metrics_df.head())
+
+
+metrics = baseline_aggregate_metrics_df.reset_index().rename(columns={"index":"Algorithm"}).to_dict(orient="records")
+
+for model_config in models_to_run:
+    pred_mask = pred_df.Algorithm==model_config.name
+    metric_mask = metrics_df.Algorithm==model_config.name
+    metrics.append({
+    "Algorithm": model_config.name,
+    "MAE": ts_utils.mae(pred_df.loc[pred_mask,"voltage_measured"], pred_df.loc[pred_mask,"predictions"]),
+    "MSE": ts_utils.mse(pred_df.loc[pred_mask,"voltage_measured"], pred_df.loc[pred_mask,"predictions"]),
+    "meanMASE": metrics_df.loc[metric_mask, "MASE"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(pred_df.loc[pred_mask,"voltage_measured"], pred_df.loc[pred_mask,"predictions"])
+})
+
+agg_metrics_df = pd.DataFrame(metrics)
+agg_metrics_df.style.format({"MAE": "{:.4f}", 
+                          "MSE": "{:.4f}", 
+                          "meanMASE": "{:.4f}", 
+                          "Forecast Bias": "{:.2f}%"}).highlight_min(color='lightgreen', subset=["MAE","MSE","meanMASE"]).apply(highlight_abs_min, props='color:black;background-color:lightgreen', axis=0, subset=['Forecast Bias'])
+
+
+html = agg_metrics_df.to_html()
+
+# Save to file 
+#with open(output_img/"agg_metrics.html", "w") as f:
+#    f.write(html)
+
+#print("Saved agg_metrics metrics to 'imgs/ch08/agg_metrics.html'")
+
+
+# === Saving the Baseline Forecasts and Metrics ===
+pred_df.to_pickle(output/"ml_single_step_prediction_val_df.pkl")
+metrics_df.to_pickle(output/"ml_single_step_metrics_val_df.pkl")
+agg_metrics_df.to_pickle(output/"ml_single_step_aggregate_metrics_val.pkl")
+
+
 
 
 

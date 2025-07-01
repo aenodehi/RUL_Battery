@@ -20,3 +20,5 @@ humanize
 pytorch_lightning
 mlforecast
 window_ops
+xgboost
+lightgbm
