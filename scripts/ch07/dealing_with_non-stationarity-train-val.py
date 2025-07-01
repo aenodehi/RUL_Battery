@@ -90,7 +90,7 @@ train_out = (
 print(train_out.head())
 
 # === Save ===
-train_out.to_parquet(preprocessed / "selected_blocks_train_auto_stat_target.parquet")
-joblib.dump(transformer_pipelines, preprocessed / "auto_transformer_pipelines_train.pkl")
+train_out.to_parquet(preprocessed / "selected_blocks_train_val_auto_stat_target.parquet")
+joblib.dump(transformer_pipelines, preprocessed / "auto_transformer_pipelines_train_val.pkl")
 
 print("✅ Done. Stationary target saved and pipelines dumped.")
