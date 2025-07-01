@@ -1,3 +1,5 @@
+# This file is Forecasting with ML
+
 # import os
 # import time
 
@@ -22,6 +24,7 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRFRegressor
 from lightgbm import LGBMRegressor
 
+from sklearn.exceptions import DataConversionWarning
 from src.forecasting.ml_forecasting import (
     FeatureConfig,
     MissingValueConfig,
@@ -233,11 +236,12 @@ pred_df = pred_df.reset_index()
 # fig.update_xaxes(type="date", range=["2014-01-01", "2014-01-08"])
 # fig.write_image(output_img/"lin_reg.png")
 # #fig.show()
-# 
+ 
 # fig_fimp = px.bar(feat_df.head(15), x="feature", y="importance")
 # format_plot(fig_fimp, xlabel="Features", ylabel="Importance", title=f"Feature Importance - {model_config.name}", font_size=12)
 # fig_fimp.write_image(output_img/"lin_reg_fimp.png")
 # #fig_fimp.show()
+
 
 # === Ridge Regression (L2) ===
 model_config = ModelConfig(
@@ -262,6 +266,7 @@ metrics["Time Elapsed"] = timer.elapsed
 metric_record.append(metrics)
 pred_df = pred_df.join(y_pred)
 # print(metrics)
+warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 
 # fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
 
@@ -298,7 +303,6 @@ metrics["Time Elapsed"] = timer.elapsed
 metric_record.append(metrics)
 pred_df = pred_df.join(y_pred)
 # print(metrics)
-
 # fig = plot_forecast(pred_df, forecast_columns=[model_config.name], forecast_display_names=[model_config.name], timestamp_col="ds", target_col="y")
 
 # fig = format_plot(fig, title=f"{model_config.name}: MAE: {metrics['MAE']:.4f} | MSE: {metrics['MSE']:.4f} | MASE: {metrics['MASE']:.4f} | Bias: {metrics['Forecast Bias']:.4f}")
@@ -484,10 +488,10 @@ with LogTime() as timer:
 
 
 pred_df = pd.concat(all_preds)
-print(pred_df.head())
+#print(pred_df.head())
 
 metrics_df = pd.DataFrame(all_metrics)
-print(metrics_df.head())
+#print(metrics_df.head())
 
 
 metrics = baseline_aggregate_metrics_df.reset_index().rename(columns={"index":"Algorithm"}).to_dict(orient="records")
@@ -524,7 +528,73 @@ pred_df.to_pickle(output/"ml_single_step_prediction_val_df.pkl")
 metrics_df.to_pickle(output/"ml_single_step_metrics_val_df.pkl")
 agg_metrics_df.to_pickle(output/"ml_single_step_aggregate_metrics_val.pkl")
 
+# === Using Exogenous Variables ===
+# run LightGBM, which was our best performing algorithm with exogenous variables
+
+lcl_ids = sorted(train_df.unique_id.unique())
+models_to_run = [
+    ModelConfig(model = LGBMRegressor(random_state=42), name="LightGBM", normalize=False, fill_missing=False)
+]
+
+all_preds = []
+all_metrics = []
+#We can parallelize this loop to run this faster
+for lcl_id in tqdm(lcl_ids):
+    for model_config in models_to_run:
+        model_config = model_config.clone()
+        X_train, y_train, _ = feat_config.get_X_y(train_df.loc[train_df.unique_id==lcl_id,:], categorical=False, exogenous=True)
+        X_test, y_test, _ = feat_config.get_X_y(test_df.loc[test_df.unique_id==lcl_id,:], categorical=False, exogenous=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # warnings.filterwarnings("ignore",category=DataConversionWarning)
+            y_pred, metrics, feat_df = evaluate_model(model_config, feat_config, missing_value_config, X_train, y_train, X_test, y_test)
+        y_pred.name = "predictions"
+        y_pred = y_pred.to_frame()
+        y_pred['unique_id'] = lcl_id
+        y_pred['Algorithm'] = model_config.name+"_w_exog"
+        metrics["unique_id"] = lcl_id
+        metrics["Algorithm"] = model_config.name+"_w_exog"
+        y_pred['voltage_measured'] = y_test.values
+        all_preds.append(y_pred)
+        all_metrics.append(metrics)
+
+pred_w_ex_df = pd.concat(all_preds)
+#print(pred_w_ex_df.head())
+
+metrics_w_ex_df = pd.DataFrame(all_metrics)
+#print(metrics_w_ex_df.head())
 
 
+# === Evaluation of ML Forecast with Exogenous ===
+
+metrics = baseline_aggregate_metrics_df.reset_index().rename(columns={"index":"Algorithm"}).to_dict(orient="records")
 
 
+metrics.append(agg_metrics_df.iloc[4].to_dict())
+
+for model_config in models_to_run:
+    pred_mask = pred_w_ex_df.Algorithm==model_config.name+"_w_exog"
+    metric_mask = metrics_w_ex_df.Algorithm==model_config.name+"_w_exog"
+    metrics.append({
+    "Algorithm": model_config.name+"_w_exog",
+    "MAE": ts_utils.mae(pred_w_ex_df.loc[pred_mask,"voltage_measured"], pred_w_ex_df.loc[pred_mask,"predictions"]),
+    "MSE": ts_utils.mse(pred_w_ex_df.loc[pred_mask,"voltage_measured"], pred_w_ex_df.loc[pred_mask,"predictions"]),
+    "meanMASE": metrics_w_ex_df.loc[metric_mask, "MASE"].mean(),
+    "Forecast Bias": ts_utils.forecast_bias_aggregate(pred_w_ex_df.loc[pred_mask,"voltage_measured"], pred_w_ex_df.loc[pred_mask,"predictions"])
+})
+
+agg_metrics_w_ex_df = pd.DataFrame(metrics)
+agg_metrics_w_ex_df.style.format({"MAE": "{:.3f}", 
+                          "MSE": "{:.3f}", 
+                          "meanMASE": "{:.3f}", 
+                          "Forecast Bias": "{:.2f}%"}).highlight_min(color='lightgreen', subset=["MAE","MSE","meanMASE"]).apply(highlight_abs_min, props='color:black;background-color:lightgreen', axis=0, subset=['Forecast Bias'])
+
+
+html = agg_metrics_w_ex_df.to_html()
+
+# Save to file 
+#with open(output_img/"agg_metrics_w_ex.html", "w") as f:
+#    f.write(html)
+
+#print("Saved agg_metrics_w_ex metrics to 'imgs/ch08/agg_metrics_w_ex.html'")
+#print(X_train.columns)
