@@ -22,3 +22,6 @@ mlforecast
 window_ops
 xgboost
 lightgbm
+category_encoders
+
+
