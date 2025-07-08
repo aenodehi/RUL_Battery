@@ -1,10 +1,15 @@
-# .gitignore
+# Bytecode/cache/logs
 __pycache__/
 *.pyc
 *.log
+
+# PyTorch Lightning logs/checkpoints
 .lr_find_*
 .pt_tmp/
 lightning_logs/
-*/callbacks.sav
+
+# Ignore all callbacks.sav files anywhere
+**/callbacks.sav
+
 
 
