@@ -2,5 +2,7 @@
 __pycache__/
 *.pyc
 *.log
-
+.lr_find_*
+.pt_tmp/
+lightning_logs/
 
