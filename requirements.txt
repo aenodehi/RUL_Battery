@@ -23,5 +23,6 @@ window_ops
 xgboost
 lightgbm
 category_encoders
-
+#pytorch-tabular
+pytorch-tabular>=1.0.0
 
