@@ -40,28 +40,28 @@ pl.seed_everything(42)
 np.random.seed(42)
 tqdm.pandas()
 
+
 def evaluate_forecast(y_pred, test_target, train_target, model_name):
     metric_l = []
-    for _id in tqdm(test_target.index.get_level_values(0).unique(), desc="Calculating metrics..."):
-        target = test_target.xs(_id)
-        _y_pred = y_pred.xs(_id)
-        history = train_target.xs(_id)
+    for uid in tqdm(test_target.index.get_level_values(0).unique(), desc="Calculating metrics..."):
+        y_true_id = test_target.xs(uid)[target]
+        y_pred_id = y_pred.xs(uid)[model_name]
+        history_id = train_target.xs(uid)[target]
         metric_l.append(
-            calculate_metrics(target, _y_pred, name=model_name, y_train=history)
+            calculate_metrics(y_true_id, y_pred_id, name=model_name, y_train=history_id)
         )
+
     eval_metrics_df = pd.DataFrame(metric_l)
+
+    true = test_target[target]
+    pred = y_pred[model_name]
+
     agg_metrics = {
-            "Algorithm": model_name,
-            "MAE": ts_utils.mae(
-                test_target, y_pred
-            ),
-            "MSE": ts_utils.mse(
-                test_target, y_pred
-            ),
-            "meanMASE": eval_metrics_df.loc[:, "MASE"].mean(),
-            "Forecast Bias": ts_utils.forecast_bias_aggregate(
-                test_target, y_pred
-            )
+        "Algorithm": model_name,
+        "MAE": ts_utils.mae(true, pred),
+        "MSE": ts_utils.mse(true, pred),
+        "meanMASE": eval_metrics_df["MASE"].mean(),
+        "Forecast Bias": ts_utils.forecast_bias_aggregate(true, pred),
     }
     return agg_metrics, eval_metrics_df
 
