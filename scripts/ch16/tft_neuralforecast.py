@@ -110,6 +110,7 @@ train_df.rename(columns=rename_cols, inplace=True)
 test_df.rename(columns=rename_cols, inplace=True)
 # print(train_df.head(2))
 # print(test_df.columns)
+# print(len(test_df.timestamp.unique()))
 
 # plot_df = train_df[train_df['unique_id'] == 'B0005'].copy()
 # 
