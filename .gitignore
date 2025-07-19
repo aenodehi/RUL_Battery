@@ -11,5 +11,5 @@ lightning_logs/
 # Ignore all callbacks.sav files anywhere
 **/callbacks.sav
 
-
+.gitattributes
 
